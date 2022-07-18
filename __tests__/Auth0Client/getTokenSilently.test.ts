@@ -188,6 +188,39 @@ describe('Auth0Client', () => {
       );
     });
 
+
+    it('override default redirect_uri when passing buildRedirectUri function', async () => {
+      const redirect_uri = 'https://custom-redirect-uri/callback';
+      const auth0 = setup({
+        redirect_uri,
+        buildRedirectUri: (context, default_uri) => {
+          if (context === '_getTokenFromIFrame') {
+            return 'https://custom-redirect-uri/overriden/callback';
+          }
+          return default_uri || window.location.origin;
+        }
+      });
+
+      jest.spyOn(<any>utils, 'runIframe').mockResolvedValue({
+        access_token: TEST_ACCESS_TOKEN,
+        state: TEST_STATE
+      });
+
+      await getTokenSilently(auth0);
+
+      const [[url]] = (<jest.Mock>utils.runIframe).mock.calls;
+
+      assertUrlEquals(
+        url,
+        'auth0_domain',
+        '/authorize',
+        {
+          redirect_uri: 'https://custom-redirect-uri/overriden/callback'
+        },
+        false
+      );
+    });
+
     it('calls the token endpoint with the correct params', async () => {
       const auth0 = setup();
 
@@ -697,31 +730,30 @@ describe('Auth0Client', () => {
           supported: true
         }
       ].forEach(({ name, userAgent, supported }) =>
-        it(`refreshes the token ${
-          supported ? 'with' : 'without'
-        } the worker, when ${name}`, async () => {
-          const originalUserAgent = window.navigator.userAgent;
+        it(`refreshes the token ${supported ? 'with' : 'without'
+          } the worker, when ${name}`, async () => {
+            const originalUserAgent = window.navigator.userAgent;
 
-          Object.defineProperty(window.navigator, 'userAgent', {
-            value: userAgent,
-            configurable: true
-          });
+            Object.defineProperty(window.navigator, 'userAgent', {
+              value: userAgent,
+              configurable: true
+            });
 
-          const auth0 = setup({
-            useRefreshTokens: true,
-            cacheLocation: 'memory'
-          });
+            const auth0 = setup({
+              useRefreshTokens: true,
+              cacheLocation: 'memory'
+            });
 
-          if (supported) {
-            expect((<any>auth0).worker).toBeDefined();
-          } else {
-            expect((<any>auth0).worker).toBeUndefined();
-          }
+            if (supported) {
+              expect((<any>auth0).worker).toBeDefined();
+            } else {
+              expect((<any>auth0).worker).toBeUndefined();
+            }
 
-          Object.defineProperty(window.navigator, 'userAgent', {
-            value: originalUserAgent
-          });
-        })
+            Object.defineProperty(window.navigator, 'userAgent', {
+              value: originalUserAgent
+            });
+          })
       );
     });
 

@@ -131,6 +131,10 @@ export interface Auth0ClientOptions extends BaseLoginOptions {
    */
   redirect_uri?: string;
   /**
+   * Will allow you to override the redirect_uri for each method who call it.
+  */
+  buildRedirectUri?: (context: '_getTokenFromIFrame' | 'buildAuthorizeUrl' | 'loginWithPopup' | '_getTokenUsingRefreshToken', default_uri?: string) => string;
+  /**
    * The value in seconds used to account for clock skew in JWT expirations.
    * Typically, this value is no more than a minute or two at maximum.
    * Defaults to 60s.
@@ -313,7 +317,7 @@ export interface RedirectLoginResult<TAppState = any> {
   appState?: TAppState;
 }
 
-export interface PopupLoginOptions extends BaseLoginOptions {}
+export interface PopupLoginOptions extends BaseLoginOptions { }
 
 export interface PopupConfigOptions {
   /**

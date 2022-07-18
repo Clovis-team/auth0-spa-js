@@ -320,6 +320,13 @@ export default class Auth0Client {
     return `${this.domainUrl}${path}&auth0Client=${auth0Client}`;
   }
 
+  private _getRedirectUri(context: Parameters<Auth0ClientOptions["buildRedirectUri"]>[0], default_uri?: string) {
+    if (typeof this.options.buildRedirectUri === "function") {
+      return this.options.buildRedirectUri(context, default_uri);
+    }
+    return default_uri;
+  }
+
   private _getParams(
     authorizeOptions: BaseLoginOptions,
     state: string,
@@ -435,7 +442,7 @@ export default class Auth0Client {
       stateIn,
       nonceIn,
       code_challenge,
-      redirect_uri
+      this._getRedirectUri('buildAuthorizeUrl', redirect_uri)
     );
 
     const url = this._authorizeUrl(params);
@@ -507,7 +514,7 @@ export default class Auth0Client {
       stateIn,
       nonceIn,
       code_challenge,
-      this.options.redirect_uri || window.location.origin
+      this._getRedirectUri('loginWithPopup', this.options.redirect_uri || window.location.origin)
     );
 
     const url = this._authorizeUrl({
@@ -1084,9 +1091,9 @@ export default class Auth0Client {
       stateIn,
       nonceIn,
       code_challenge,
-      options.redirect_uri ||
+      this._getRedirectUri('_getTokenFromIFrame', options.redirect_uri ||
         this.options.redirect_uri ||
-        window.location.origin
+        window.location.origin)
     );
 
     const orgIdHint = this.cookieStorage.get<string>(this.orgHintCookieName);
@@ -1205,10 +1212,10 @@ export default class Auth0Client {
       );
     }
 
-    const redirect_uri =
+    const redirect_uri = this._getRedirectUri('_getTokenUsingRefreshToken',
       options.redirect_uri ||
       this.options.redirect_uri ||
-      window.location.origin;
+      window.location.origin);
 
     let tokenResult: TokenEndpointResponse;
 
